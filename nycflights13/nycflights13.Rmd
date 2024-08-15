@@ -1,0 +1,200 @@
+---
+title: Visualizing Data from The nycflights13 Package
+author: "Mariia Karnaukh"
+date: "2024-01-31"
+output: html_document
+---
+
+# Visualizing Flights of the New York Airport in 2013.
+
+The following analysis makes use of the `nycflights13` package that contains several data-sets on airlines, airports, flights, planes and weather for the New York airport in the year 2013. I prepare below some visualization to better understand the trends presented in these data-sets.
+
+## Step 0:
+
+Loading the nycflights13 package and check what data-sets are bundled.
+
+```{r}
+library(nycflights13)
+data(package = 'nycflights13')
+```
+
+## Step 1:
+
+Visualizing the distribution of arrival delays per origin airport.
+
+```{r}
+library(ggplot2)
+```
+
+```{r, echo=FALSE}
+ggplot(flights, aes(origin,arr_delay)) + geom_boxplot() +
+  theme_grey() +
+  labs(title = "Distribution of Arrival Delays per Origin Airport",
+                                                           x = "Origin Airport",
+                                                           y = "Arrival Delay (minutes)")
+```
+
+## Step 2:
+
+Visualizing the distribution of arrival delays per destination airport.
+
+```{r out.width = '100%'}
+ggplot(flights, aes(dest,arr_delay, label = dest)) + 
+  geom_boxplot(outlier.size = 0.5, lwd = 0.5) + 
+  theme_grey() + 
+  labs(title = 'Flights Departing from NY in 2013', 
+       x = 'Destination Airport', 
+       y = 'Arrival Delays (Minutes)') + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 4), 
+        axis.title.x = element_text(size = 9), 
+        axis.title.y = element_text(size = 9))
+```
+
+## Step 3:
+
+Computing and visualizing the average arrival delay per destination.
+
+```{r out.width = '100%'}
+library(dplyr)
+num_NA <- summary(is.na(flights))
+num_NA ##arr_delay :9430 NA, about 3% of the data, drop NA
+
+flights_c <- flights %>%
+  filter(!(is.na(arr_delay)))
+
+num_NA2 <- summary(is.na(flights_c))
+
+avg_delay_table <- flights_c %>%
+  group_by(dest) %>%
+  summarise(avg_delay_dest = mean(arr_delay))
+print(avg_delay_table)
+
+num_NA3 <- summary(is.na(avg_delay_table))
+
+ggplot(avg_delay_table, aes(reorder(dest, avg_delay_dest),avg_delay_dest, label = dest)) +
+  geom_col() + labs(title = 'Flights Departing from NY in 2013',
+                    x = 'Destination Airport',
+                    y = 'Average Delay (Minutes)') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 4),
+        axis.title.x = element_text(size = 9),
+        axis.title.y = element_text(size = 9))
+```
+
+## Step 4:
+
+Redoing the above plot by showing the actual name of the destination airport instead of it's FAA id.
+
+```{r out.width = '100%'}
+data(airports)
+
+avg_delay_table2 <- avg_delay_table %>%
+  rename(faa = dest)
+
+table2 <- avg_delay_table2 %>%
+  left_join(airports, by = 'faa')
+
+#Check for NA
+num_NA4 <- summary(is.na(table2))
+
+# Drop NA :100 unique values
+table2 <- table2 %>%
+  filter(!(is.na(lat)))
+
+#Graph
+ggplot(table2,
+       aes(reorder(name, avg_delay_dest),avg_delay_dest, label = name)) +
+  geom_col() + labs(title = 'Flights Departing from NY in 2013',
+                    x = 'Destination Airport',
+                    y = 'Average Delay (Minutes)') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 4),
+        axis.title.x = element_text(size = 9),
+        axis.title.y = element_text(size = 9))
+```
+
+## Step 5:
+
+Coloring the bars by the timezone of the airport.
+
+```{r out.width = '100%'}
+ggplot(table2,
+       aes(reorder(name, avg_delay_dest),avg_delay_dest,
+           label = name, fill = tzone)) +
+  geom_col() +
+  labs(title = 'Flights Departing from NY in 2013',
+                    x = 'Destination Airport',
+                    y = 'Average Delay (Minutes)',
+                    fill = 'Timezone') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 4),
+        axis.title.x = element_text(size = 9),
+        axis.title.y = element_text(size = 9),
+        legend.position = 'top',
+        legend.direction = 'horizontal') +
+  guides(fill = guide_legend(nrow = 1))
+```
+
+## Step 6:
+
+Visualizing destination airports on a world-map with the point sizes relative to the number of flights to there from NY.
+
+```{r out.width = '100%'}
+# Add a new column with the number of time the airport was flown to
+count_by_dest <- flights %>%
+  count(dest, name = 'count_by_dest')
+count_by_dest
+airports_with_faa_count <- left_join(airports, count_by_dest, by = c('faa' = 'dest'))
+airports_with_faa_count <- airports_with_faa_count %>%
+  filter(!is.na(count_by_dest))
+airports_with_faa_count
+
+# Create the map using ggplot2
+world <- map_data('world')
+
+ggplot() +
+  geom_polygon(data = world, aes(x = long, y = lat, group = group),
+               fill = 'lightblue') +
+  geom_point(data = airports_with_faa_count,
+             aes(x = lon, y = lat, size = count_by_dest), color = 'red', alpha = 0.7) +
+  scale_size_continuous(range = c(1, 5)) +
+  labs(title = 'Flights Departing to NY in 2013', x = 'Longitude',
+       y = 'Latitude', size = 'N') +
+  theme_minimal()
+```
+
+## Step 7:
+
+Computing the average departure and arrival delays, also the average air time and distance per destination, then passing the scaled dataframe through MDS to visualize the similarities/dissimilarities of the destination airports.
+
+```{r out.width = '100%'}
+avg_vars <- flights %>%
+  group_by(dest) %>%
+  summarize(avg_dep_delay = mean(dep_delay, na.rm = TRUE),
+            avg_arr_delay = mean(arr_delay, na.rm = TRUE),
+            avg_air_time = mean(air_time, na.rm = TRUE),
+            avg_distance = mean(distance, na.rm = TRUE))
+head(avg_vars)
+
+dest_codes <- avg_vars$dest
+
+avg_vars2 <- scale(avg_vars[, -1])
+head(avg_vars2)
+
+mds <- cmdscale(dist(avg_vars2))
+head(mds)
+
+#Plot using ggplot, convert to a data frame
+mds <- as.data.frame(cmdscale(dist(scale(avg_vars2))))
+
+#Flip horizontally
+mds$V1 <- mds$V1 * -1
+mds$dest <- dest_codes
+
+# Plot MDS results using ggplot2
+library(ggrepel)
+ggplot(mds, aes(x = V1, y = V2, label = dest)) +
+  geom_point() +
+  geom_text_repel(aes(label = dest), size = 3, max.overlaps = 50) +
+  labs(title = "MDS Visualization of Destination Airports",
+       x = NULL,
+       y = NULL) +
+  theme_minimal()
+```
