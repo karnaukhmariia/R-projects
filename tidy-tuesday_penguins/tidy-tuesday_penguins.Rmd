@@ -1,0 +1,226 @@
+---
+title: "Final Project"
+author: "Mariia Karnaukh"
+date: "2024-02-22"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+### Visualizing Data About Palmer Penguins (TidyTuesday Project)
+The following analysis makes use of the `penguins` data-set provided as part of the weekly TidyTuesday projects. The goal of these visualizations is to uncover the trends in body mass, culmen (bill) length, bill depth among the penguin species. The analysis concludes by visualizing the location of these penguins on a map.
+
+
+## Exploratory Data Analysis and Calling the Packages
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r exploratory da}
+library(palmerpenguins)
+library(tidyverse)
+library(gganimate)
+library(ggdark)
+library(viridis)
+library(plotly)
+library(ggiraph)
+library(extrafont)
+library(leaflet)
+library(ggmap)
+library(tidygeocoder)
+library(data.table)
+head(penguins)
+str(penguins)
+head(penguins_raw)
+str(penguins_raw)
+clean_penguins <- na.omit(penguins)
+```
+
+## Custom Theme
+
+```{r custom theme}
+theme_custom <- function() {
+  dark_theme_gray(base_family = "Times New Roman") +
+    theme(
+      plot.title = element_text(face = "plain", size = 17, margin = margin(t = 10,b = 30), color = "lightgrey"),
+      plot.subtitle = element_text(face = "italic", color = "grey"),
+      axis.title = element_text(face = "plain", size = 12, margin = margin(15,15,15,15), color = "lightgrey"),
+      axis.text = element_text(size = 10, margin = margin(t = 20, r = 20), color = "lightgrey"),
+      legend.title = element_text(size = 14, color = "lightgrey"),
+      legend.text = element_text(size = 12, color = "lightgrey"),
+      panel.background = element_rect(
+      linewidth = 2),
+      plot.margin = margin(10,10,10,10),
+      plot.caption = element_text(size = 8, face = "italic", margin = margin(5,5,5,15), hjust = 0.5)
+    )
+}
+```
+
+## Plot 1: Flipper Length vs. Body Mass by Species
+
+The following graph is a scatter-plot of penguin flipper length (mm) and body mass (g). Two things can be observed: first, there is a positive relationship between the two, and second, it tends to cluster by species.
+
+```{r Flipper Length vs. Body Mass by Species}
+p.1 <- ggplot(clean_penguins, aes(x = flipper_length_mm, y = body_mass_g, color = species, size = species, tooltip = island, data_id = factor(island))) +
+  geom_point_interactive(size = 3, alpha = 0.6) +
+  scale_color_viridis_d(option = "A", begin = 0.3, end = 0.7, direction = 1, aesthetics = c("color", "fill")) +
+  theme_custom() +
+  labs(title = "Flipper Length vs. Body Mass by Species", x = "Flipper Length (mm)", y = "Body Mass (g)",
+       caption = "Figure 1: Hover over the points of the graph to see which island the cluster of penguins belongs to.",
+       color = "Species")
+
+p.i.1 <- girafe(ggobj = p.1, options = list(
+  opts_hover(css = "fill:black;"),
+  opts_zoom(max = 2),
+  opts_sizing(width = 1)
+))
+p.i.1
+```
+
+## Plot 2: Distribution of Penguin Bill Length and Depth by Species
+
+The following graph is hex-plot showing the relationship between penguin bill length (mm) and bill depth (mm). Once again, a positive relationship and clustering by species is observed.
+
+```{r Distribution of Penguin Bill Length and Depth by Species, fig.width=10, fig.height=5}
+ggplot(clean_penguins, aes(bill_length_mm, y = bill_depth_mm)) +
+  geom_hex() +
+  scale_color_viridis_d(option = "A", begin = 0.3, end = 0.7, direction = 1) +
+  theme_custom() +
+  labs(title = "Distribution of Penguin Bill Length and Depth by Species",
+       x = "Bill Length (mm)",
+       y = "Bill Depth (mm)") +
+  facet_wrap(~species)
+
+```
+
+## Plot 3: Body Mass Distribution by Sex and Species
+
+The following graph shows the distribution of body mass (g) in each species by sex. Two things can be observed from the graph below. First, is that males generally weigh more than females regardless of species. Second, the difference between male and female weight seems to be constant across species.
+
+```{r Body Mass Distribution by Sex and Species, out.width = '100%'}
+p.3 <- ggplot(clean_penguins, aes(x = sex, y = body_mass_g, fill = sex)) +
+  geom_boxplot() +
+  labs(title = "Body Mass Distribution by Sex and Species",
+       x = "",
+       y = "Body Mass (g)",
+       fill = "Sex") +
+  theme_custom() +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+  facet_wrap(~species) +
+  scale_fill_viridis_d(option = "B", begin = 0.3, end = 0.7, direction = 1) +
+   geom_jitter(alpha = 0.5, show.legend = FALSE, position = position_jitter(width = 0.2, seed = 0))
+
+p.i.3 <- ggplotly(p.3)
+p.i.3
+
+```
+
+## Plot 4: Density Contour Plot of Bill Length vs. Depth by Species
+
+The graph below is another illustration of the relationship between bill depth (mm) and length (mm). The density plot may prove to be more useful for visual analysis in some cases as it clearly shows the values around which each species is centered and clustering amongst species.
+
+```{r Density Contour Plot of Bill Length vs. Depth by Species, out.width = '100%', fig.height=5}
+p.4 <- ggplot(clean_penguins, aes(x = bill_length_mm, y = bill_depth_mm, fill = after_stat(level))) +
+  geom_density_2d(aes(color = species)) +
+  labs(title = "Density Contour Plot of Bill Length vs. Depth by Species", x = "Bill Length (mm)", y = "Bill Depth (mm)",
+       caption = "Figure 4: Hover over the plot to display specific data point values",
+       color = "Species") +
+  theme_custom() +
+  scale_color_viridis_d(option = "B", begin = 0.3, end = 0.7, direction = 1)
+
+p.i.4 <- ggplotly(p.4)
+p.i.4
+```
+
+## Plot 5: Frequency of Each Species of Penguin by Island
+
+The following graph is a bar graph of the size of each species' population by island. It is important to note that some islands have more than one species.
+
+```{r Frequency of Each Species of Penguin by Island, out.width = '100%', fig.height=5}
+p.5 <- ggplot(clean_penguins, aes(x = factor(species))) +
+  geom_bar(aes(fill = species, text = paste('Frequency:', ..count..))) +
+  labs(title = "Frequency of Each Species of Penguin by Island", y = "Count",
+       fill = "Species") +
+  facet_wrap(~island, scales = "free_x") +
+  theme_custom() + 
+  scale_fill_viridis_d(option = "G", begin = 0.3, end = 0.7, direction = 1)
+
+p.5 <- p.5 + theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.x = element_blank())
+
+p.i.5 <- ggplotly(p.5, tooltip = "text")
+p.i.5
+```
+
+## Animation: Evolution of bill measurements over time
+
+The following animation shows the evolution of individual bill measurements in species from 2007 until 2009. Light variation can be observed, but nonetheless, relatively constant clustering across species is observed over time.
+
+```{r Animation, out.width = '100%'}
+penguins_animation <- penguins %>%
+  drop_na(bill_length_mm, bill_depth_mm, species, year)
+
+p <- ggplot(penguins_animation, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point(size = 3, alpha = 0.6) +
+  scale_color_viridis_d(option = "D", begin = 0.3, end = 0.7, direction = 1) +
+  theme_custom() +
+  labs(title = 'Year: {frame_time}', x = 'Bill Length (mm)', y = 'Bill Depth (mm)', caption = 'The Evolution of Individual Bill Measurements in Species Across Time (2007-09)', color = 'Species') +  
+  theme(legend.position = "right") +
+  transition_time(year) +
+  ease_aes('linear')
+
+animate(p, renderer = gifski_renderer(), width = 800, height = 600, duration = 10, end_pause = 50)
+
+anim_save("penguin_individual_bill_measurements_viridis_darkmode.gif")
+
+```
+
+## Geospatial Plot
+
+The figure below shows the locations of the previously discussed islands on a world map. Hover over the points to view more information about them.
+
+```{r Geospatial, out.width = '100%'}
+islands_df <- data.frame(island = as.character(unique(clean_penguins$island)))
+
+islands_geocoded <- geocode(islands_df, 'island', method = 'osm', lat = latitude , long = longitude)
+
+islands <- as.data.table(islands_geocoded)
+
+clean_penguins_dt <- as.data.table(clean_penguins)
+
+clean_penguins_geocoded <- merge(clean_penguins_dt, islands_geocoded, 
+                                 by = "island", all.x = TRUE)
+
+island_counts <- clean_penguins_geocoded %>%
+  group_by(island) %>%
+  summarise(Count = n())
+
+islands <- islands %>%
+  left_join(island_counts, by = "island")
+```
+
+```{r echo=FALSE, include=FALSE}
+register_stadiamaps("514f3c78-87ee-4f45-b50a-7258050f9429", write = TRUE)
+```
+
+```{r, out.width = '100%'}
+bbox <- c(left = -170, bottom = -80, right = 170, top = 80)  # Full world coordinates
+
+map <- get_stadiamap(bbox, maptype = 'alidade_smooth_dark', zoom = 4)
+
+ ggmap <- ggmap(map) +
+  geom_point(data = islands, aes(longitude, latitude, size = Count, color = island), alpha = 0.7)+
+  theme(legend.position = "none",
+        plot.title = element_text(face = "plain", size = 17, margin = margin(t = 10,b = 30)),
+      axis.title = element_text(face = "plain", size = 12, margin = margin(15,15,15,15))) +
+  labs(title = "Population Size of Penguins on Each Island", x = "Longitude", y = "Latitude",
+       color = "Island") + theme_grey() +
+  scale_size_area(max_size = 7, guide = FALSE) +
+   scale_color_viridis_d(option = "G", begin = 0.3, end = 0.7, direction = 1)
+  
+ ggmap.i <- ggplotly(ggmap)
+ ggmap.i
+```
