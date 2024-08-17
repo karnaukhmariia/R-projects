@@ -10,7 +10,9 @@ Welcome to my R projects repository. This repository contains two detailed case 
 This project involves visualizing flight data from the nycflights13 package. The dataset provides comprehensive information about flights departing from New York City in 2013, including details about delays, carriers, and more.
 
 Key Features:
+
 Data Exploration: Summarizing and exploring the dataset to understand the structure and key variables.
+
 Visualization: Creating a series of plots to illustrate various aspects of the flight data, such as delays, departure times, and flight paths.
 The analysis leverages R's powerful visualization libraries to provide clear insights into flight patterns and factors influencing delays.
 
@@ -22,9 +24,11 @@ nycflights.rmd: The R Markdown file containing the full analysis and visualizati
 This project focuses on the Palmer Penguins dataset, which provides data on three species of penguins (Adelie, Chinstrap, and Gentoo) in the Palmer Archipelago, Antarctica. The analysis aims to explore the data, comparing species and visualizing differences in physical characteristics.
 
 Key Features:
+
 Data Cleaning: Preparing the dataset by handling missing values and transforming variables.
+
 Exploratory Data Analysis (EDA): Creating visualizations to explore relationships between variables, such as body mass and flipper length across different species.
-Insights Extraction: Drawing conclusions about the distinguishing features of each penguin species.
+
 This project demonstrates how to use R for data analysis and visualization, offering insights into the diversity and characteristics of penguins in the Palmer Archipelago.
 
 Files:
