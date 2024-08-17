@@ -38,6 +38,6 @@ To explore the case studies, clone this repository and open the R Markdown files
 
 ## Requirements
 
-R 4.x or higher
-RStudio (optional but recommended)
-The following R packages: nycflights13, ggplot2, dplyr, palmerpenguins
+1. R 4.x or higher
+2. RStudio (optional but recommended)
+3. The following R packages: `nycflights13`, `ggplot2`, `dplyr`, `palmerpenguins`.
