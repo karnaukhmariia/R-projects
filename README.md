@@ -34,7 +34,7 @@ Getting Started
 
 To explore the case studies, clone this repository and open the R Markdown files in RStudio or your preferred R environment. Ensure you have the necessary packages installed by running the following command in R:
 
-`install.packages(c("nycflights13", "ggplot2", "dplyr", "palmerpenguins"))'
+`install.packages(c("nycflights13", "ggplot2", "dplyr", "palmerpenguins"))`
 
 ## Requirements
 
